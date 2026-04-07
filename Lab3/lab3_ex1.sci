@@ -18,5 +18,5 @@ function [yn, yorigin]= delay(xn, xorigin, k)
     disp("yn = ");
     disp(yn);
     disp("yorigin = ");
-    disp(y_o);
+    disp(yorigin);
 endfunction

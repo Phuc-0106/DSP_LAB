@@ -1,0 +1,132 @@
+\documentclass[12pt,a4paper]{article}
+
+% Vietnamese support
+\usepackage[utf8]{inputenc}
+\usepackage[T5]{fontenc}
+
+% Formatting
+\usepackage{geometry}
+\geometry{a4paper, margin=2.5cm}
+
+\usepackage{setspace}
+\usepackage{titlesec}
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{hyperref}
+
+\graphicspath{{./}{Lab3/}}
+
+\title{\textbf{DIGITAL SIGNAL PROCESSING LAB --- LAB 3}}
+\author{
+Nguyễn Thiên Phúc - 2252645
+}
+\date{24/03/2026}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{6pt}
+\begin{document}
+
+\maketitle
+
+\begin{center}
+\textbf{Digital Signal Processing Semester 242 CO2036}
+\end{center}
+
+\vspace{1cm}
+
+\section*{Overall}
+This report documents Laboratory 3 on discrete-time signal operations when sequences are stored as finite vectors with an explicit time origin. The exercises implement delay, advance, time reversal (folding), addition, multiplication, and linear convolution in Scilab using user-defined functions that track the sample index of $n=0$.
+
+The work extends the elementary signal manipulations from earlier labs by handling signals that may start at different time indices. Padding with zeros is used to align origins before addition and pointwise multiplication. Convolution is implemented with nested loops and the output length and origin are derived from the input sequences.
+
+\section{Introduction}
+In practical discrete-time processing, a signal is often represented by a finite vector of samples together with the index of the reference sample (the origin). Operations such as shifting, reversing, combining two signals, and convolving with an impulse response must update both the sample values and the origin so that plots use the correct time axis $n$.
+
+Scilab provides \texttt{plot2d3} for stem-style plots and vector tools for alignment. This laboratory focuses on writing reusable functions (\texttt{delay}, \texttt{advance}, \texttt{fold}, \texttt{add}, \texttt{multi}, \texttt{conv\_signal}) that return the output sequence and its origin for further use or plotting.
+
+\section{Objective}
+The objectives of this laboratory are:
+\begin{itemize}
+\item To implement discrete-time delay and advance by adjusting the signal origin while keeping sample values unchanged.
+\item To implement time reversal $y(n)=x(-n)$ by reversing the sample vector and computing the new origin.
+\item To add and multiply two discrete-time signals with different origins by zero-padding to align them on a common time axis.
+\item To implement discrete convolution $y(n)=x(n)*h(n)$ and determine the length and origin of the result.
+\item To visualize input and output signals with correct $n$ axes using \texttt{plot2d3} and \texttt{subplot}.
+\end{itemize}
+
+\section{Methodology}
+Each exercise is implemented as a Scilab function that accepts one or two sample vectors and their origins (1-based index of the $n=0$ sample within the vector). Time axes for plotting are built as \texttt{(1:length(xn)) - xorigin}, so the horizontal axis matches discrete time $n$.
+
+For delay by $k$ samples to the right, the origin is decreased by $k$ ($y(n)=x(n-k)$ in index terms). For advance by $k$, the origin is increased by $k$. Folding reverses the vector; the new origin is \texttt{length(xn) - xorigin + 1}.
+
+For addition and pointwise multiplication, the difference between origins is compensated by prepending zeros to the signal that is ``behind'' in time. If lengths differ after alignment, the shorter vector is padded with trailing zeros. The output origin is taken as $\max$ of the two origins after alignment.
+
+Convolution uses the standard formula with output length $N_x+N_h-1$ and output origin $n_{0,y}=n_{0,x}+n_{0,h}-1$ (1-based indexing). Results are displayed in subplots for $x(n)$, $h(n)$ (or $x_1$, $x_2$), and $y(n)$.
+
+\section{Lab Implementation}
+
+\subsection{Lab 3}
+
+\subsubsection{Exercise 1 --- Delay}
+\begin{figure}[!h]
+	\centering
+	\includegraphics[width=\linewidth]{lab3_ex1.png}
+	\caption{Original signal $x(n)$ and delayed signal $y(n)$ (Exercise 1).}
+\end{figure}
+
+The function \texttt{delay(xn, xorigin, k)} leaves the sample vector unchanged (\texttt{yn = xn}) and updates the origin to \texttt{yorigin = xorigin - k}. This models a delay of $k$ samples: the same amplitudes are associated with time indices shifted by $k$ on the $n$-axis. The first subplot shows $x(n)$; the second shows $y(n)$ with axis \texttt{ny = (1:length(yn)) - yorigin}.
+
+\subsubsection{Exercise 2 --- Advance}
+\begin{figure}[!h]
+	\centering
+	\includegraphics[width=\linewidth]{lab3_ex2.png}
+	\caption{Original signal $x(n)$ and advanced signal $y(n)$ (Exercise 2).}
+\end{figure}
+
+The function \texttt{advance(xn, xorigin, k)} also keeps \texttt{yn = xn} and sets \texttt{yorigin = xorigin + k}. This corresponds to shifting the signal $k$ samples to the left in time (advance). The plots compare $x(n)$ and $y(n)$ with their respective $n$ axes.
+
+\subsubsection{Exercise 3 --- Fold (time reversal)}
+\begin{figure}[!h]
+	\centering
+	\includegraphics[width=\linewidth]{lab3_ex3.png}
+	\caption{Signal $x(n)$ and time-reversed signal $y(n)=x(-n)$ (Exercise 3).}
+\end{figure}
+
+The function \texttt{fold(xn, xorigin)} reverses the sample order with \texttt{yn = xn(\$-1:1)} and sets \texttt{yorigin = length(xn) - xorigin + 1} so that the origin of the reversed sequence matches the definition $y(n)=x(-n)$. The second subplot is titled \texttt{y(n) = x(-n)}.
+
+\subsubsection{Exercise 4 --- Addition with alignment}
+\begin{figure}[!h]
+	\centering
+	\includegraphics[width=\linewidth]{lab3_ex4.png}
+	\caption{Signals $x_1(n)$, $x_2(n)$, and sum $y(n)=x_1(n)+x_2(n)$ (Exercise 4).}
+\end{figure}
+
+The function \texttt{add(x1n, x1origin, x2n, x2origin)} computes $k = \texttt{x1origin} - \texttt{x2origin}$. If $k>0$, $k$ leading zeros are prepended to \texttt{x2n}; if $k<0$, $-k$ zeros are prepended to \texttt{x1n}. After matching lengths with trailing zero padding if needed, \texttt{yn = x1n + x2n} and \texttt{yorigin = max(x1origin, x2origin)}. The three subplots show the aligned inputs and the sum.
+
+\subsubsection{Exercise 5 --- Multiplication with alignment}
+\begin{figure}[!h]
+	\centering
+	\includegraphics[width=\linewidth]{lab3_ex5.png}
+	\caption{Signals $x_1(n)$, $x_2(n)$, and product $y(n)=x_1(n)\cdot x_2(n)$ (Exercise 5).}
+\end{figure}
+
+The function \texttt{multi} uses the same origin and length alignment as \texttt{add}, then \texttt{yn = x1n .* x2n} for element-wise multiplication. The output origin is again \texttt{max(x1origin, x2origin)}. The figures illustrate that each output sample is the product of samples at the same discrete time $n$ after alignment.
+
+\subsubsection{Exercise 6 --- Convolution}
+\begin{figure}[!h]
+	\centering
+	\includegraphics[width=\linewidth]{lab3_ex6.png}
+	\caption{Input $x(n)$, impulse response $h(n)$, and convolution $y(n)=x(n)*h(n)$ (Exercise 6).}
+\end{figure}
+
+The function \texttt{conv\_signal(xn, xorigin, hn, horigin)} allocates \texttt{yn} of length $N_x+N_h-1$ and fills it with
+\[
+y(n) = \sum_k x(k)\,h(n-k+1)
+\]
+using nested loops over output index and $k$, with bounds checks on indices. The output origin is \texttt{yorigin = xorigin + horigin - 1}. The plots show $x(n)$, $h(n)$, and the convolution result $y(n)$ with consistent $n$ axes.
+
+\section{Discussion}
+This laboratory showed how to manipulate discrete-time signals as vectors plus an origin, which is essential for correct shifting, folding, and combining signals that do not both start at the same array index. Alignment by zero-padding makes addition and multiplication well-defined on a shared time axis. Implementing convolution explicitly clarified the output length and the relationship between input origins and the origin of the convolution sum.
+
+\section{References}
+
+\end{document}
